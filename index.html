@@ -13,12 +13,17 @@
 
 <script src="https://cdn.tailwindcss.com"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
 <style>
+
 body{
 margin:0;
 overflow:hidden;
 background:black;
-font-family:Arial, sans-serif;
+font-family:Arial,sans-serif;
 }
 
 video{
@@ -29,10 +34,11 @@ height:100%;
 object-fit:cover;
 }
 
-.overlay{
+canvas{
 position:fixed;
 inset:0;
-border:8px solid rgba(255,0,0,0.15);
+width:100%;
+height:100%;
 pointer-events:none;
 }
 
@@ -100,6 +106,21 @@ font-size:14px;
 .active{
 background:red !important;
 }
+
+.focus{
+position:absolute;
+border:3px solid cyan;
+border-radius:18px;
+pointer-events:none;
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+0%{opacity:0.5;}
+50%{opacity:1;}
+100%{opacity:0.5;}
+}
+
 </style>
 
 </head>
@@ -113,10 +134,10 @@ playsinline
 muted
 ></video>
 
-<div class="overlay"></div>
+<canvas id="overlay"></canvas>
 
 <div id="suggestion" class="topbar">
-🎬 Cinematic AI iniciado
+🎬 IA analisando ambiente...
 </div>
 
 <div class="mode">
@@ -166,6 +187,14 @@ let recordedChunks = [];
 const video =
 document.getElementById("camera");
 
+const canvas =
+document.getElementById("overlay");
+
+const ctx =
+canvas.getContext("2d");
+
+let model;
+
 async function startCamera(){
 
 try{
@@ -196,15 +225,84 @@ alert(
 
 }
 
-startCamera();
+async function loadAI(){
 
-function suggestion(text){
+model =
+await cocoSsd.load();
+
+detectFrame();
+
+}
+
+async function detectFrame(){
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const predictions =
+await model.detect(video);
+
+ctx.clearRect(
+0,
+0,
+canvas.width,
+canvas.height
+);
+
+predictions.forEach(item=>{
+
+const [x,y,w,h] = item.bbox;
+
+ctx.strokeStyle = "cyan";
+ctx.lineWidth = 4;
+
+ctx.strokeRect(x,y,w,h);
+
+ctx.fillStyle = "cyan";
+ctx.font = "18px Arial";
+
+ctx.fillText(
+item.class,
+x,
+y > 20 ? y - 5 : 20
+);
+
+ctx.beginPath();
+
+ctx.roundRect(
+x,
+y,
+w,
+h,
+20
+);
+
+ctx.stroke();
+
+});
+
+if(predictions.length > 0){
 
 document.getElementById(
 "suggestion"
-).innerText = text;
+).innerText =
+"🎯 IA detectou objeto - alinhe ao contorno";
+
+}else{
+
+document.getElementById(
+"suggestion"
+).innerText =
+"🔍 Procurando objeto ou pessoa...";
+}
+
+requestAnimationFrame(
+detectFrame
+);
 
 }
+
+startCamera().then(loadAI);
 
 document.getElementById(
 "switchCamera"
@@ -216,8 +314,6 @@ currentFacingMode === "environment"
 : "environment";
 
 await startCamera();
-
-suggestion("🔄 Câmera alterada");
 
 };
 
@@ -235,8 +331,6 @@ document.getElementById(
 "videoMode"
 ).classList.remove("active");
 
-suggestion("📸 Modo foto");
-
 };
 
 document.getElementById(
@@ -253,8 +347,6 @@ document.getElementById(
 "photoMode"
 ).classList.remove("active");
 
-suggestion("🎥 Modo vídeo");
-
 };
 
 document.getElementById(
@@ -263,16 +355,23 @@ document.getElementById(
 
 if(currentMode === "photo"){
 
-const canvas =
+const photo =
 document.createElement("canvas");
 
-canvas.width = video.videoWidth;
-canvas.height = video.videoHeight;
+photo.width =
+video.videoWidth;
 
-const ctx =
-canvas.getContext("2d");
+photo.height =
+video.videoHeight;
 
-ctx.drawImage(video,0,0);
+const photoCtx =
+photo.getContext("2d");
+
+photoCtx.drawImage(
+video,
+0,
+0
+);
 
 const link =
 document.createElement("a");
@@ -281,11 +380,14 @@ link.download =
 "shadowshot-photo.png";
 
 link.href =
-canvas.toDataURL();
+photo.toDataURL();
 
 link.click();
 
-suggestion("📸 Foto salva");
+document.getElementById(
+"suggestion"
+).innerText =
+"📸 Foto salva";
 
 }else{
 
@@ -300,7 +402,7 @@ mediaRecorder =
 new MediaRecorder(mediaStream);
 
 mediaRecorder.ondataavailable =
-event =>{
+event=>{
 
 if(event.data.size > 0){
 recordedChunks.push(event.data);
@@ -328,13 +430,19 @@ link.download =
 
 link.click();
 
-suggestion("🎥 Vídeo salvo");
+document.getElementById(
+"suggestion"
+).innerText =
+"🎥 Vídeo salvo";
 
 };
 
 mediaRecorder.start();
 
-suggestion("🔴 Gravando");
+document.getElementById(
+"suggestion"
+).innerText =
+"🔴 Gravando";
 
 }else{
 
@@ -353,33 +461,6 @@ navigator.serviceWorker.register(
 );
 
 }
-
-setInterval(()=>{
-
-const ideas = [
-
-"💡 IA: incline levemente a câmera",
-
-"💡 IA: aproxime o objeto principal",
-
-"💡 IA: use ângulo baixo para efeito cinematic",
-
-"💡 IA: centralize a silhueta",
-
-"💡 IA: use movimento suave"
-
-];
-
-const random =
-ideas[
-Math.floor(
-Math.random()*ideas.length
-)
-];
-
-suggestion(random);
-
-},7000);
 
 </script>
 

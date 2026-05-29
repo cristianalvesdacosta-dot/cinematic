@@ -1,37 +1,81 @@
-<script>
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-let currentFacingMode = "environment";
-let mediaStream = null;
-let currentMode = "photo";
-let mediaRecorder = null;
-let recordedChunks = [];
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-const video = document.getElementById("camera");
-const captureButton = document.getElementById("capture");
+<title>ShadowShot AI</title>
 
-const controls = document.createElement("div");
+<link rel="manifest" href="manifest.json">
 
-controls.className =
-"fixed bottom-5 left-1/2 -translate-x-1/2 flex gap-3 z-50";
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
 
-controls.innerHTML = `
-<button id="switchCamera"
-class="bg-black/70 text-white px-4 py-2 rounded-xl border border-white/20">
+<body class="bg-black overflow-hidden">
+
+<video
+id="camera"
+autoplay
+playsinline
+muted
+class="fixed inset-0 w-full h-full object-cover"
+></video>
+
+<div class="fixed inset-0 border-[8px] border-red-500/20 pointer-events-none"></div>
+
+<div
+id="suggestion"
+class="fixed top-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-5 py-3 rounded-2xl border border-cyan-400 z-50"
+>
+🎬 Cinematic AI iniciado
+</div>
+
+<div
+class="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-50"
+>
+
+<button
+id="switchCamera"
+class="bg-black/70 text-white px-4 py-3 rounded-full border border-white/20"
+>
 🔄
 </button>
 
-<button id="photoMode"
-class="bg-red-600 text-white px-4 py-2 rounded-xl">
+<button
+id="photoMode"
+class="bg-red-600 text-white px-4 py-3 rounded-full"
+>
 📸
 </button>
 
-<button id="videoMode"
-class="bg-zinc-800 text-white px-4 py-2 rounded-xl">
+<button
+id="videoMode"
+class="bg-zinc-800 text-white px-4 py-3 rounded-full"
+>
 🎥
 </button>
-`;
 
-document.body.appendChild(controls);
+<button
+id="capture"
+class="w-20 h-20 rounded-full bg-white border-8 border-zinc-300"
+>
+</button>
+
+</div>
+
+<script>
+
+let currentFacingMode = "environment";
+let currentMode = "photo";
+
+let mediaStream = null;
+let mediaRecorder = null;
+
+let recordedChunks = [];
+
+const video = document.getElementById("camera");
 
 async function startCamera() {
 
@@ -52,15 +96,22 @@ async function startCamera() {
 
   } catch (error) {
 
-    alert("Erro ao acessar câmera: " + error.message);
+    alert("Erro câmera: " + error.message);
 
   }
 }
 
 startCamera();
 
-document.getElementById("switchCamera")
-.addEventListener("click", async () => {
+function showSuggestion(text) {
+
+  document.getElementById("suggestion")
+  .innerText = text;
+}
+
+document
+.getElementById("switchCamera")
+.onclick = async () => {
 
   currentFacingMode =
   currentFacingMode === "environment"
@@ -69,68 +120,30 @@ document.getElementById("switchCamera")
 
   await startCamera();
 
-});
+  showSuggestion("🔄 Câmera alterada");
+};
 
-document.getElementById("photoMode")
-.addEventListener("click", () => {
+document
+.getElementById("photoMode")
+.onclick = () => {
 
   currentMode = "photo";
 
-  document.getElementById("photoMode")
-  .classList.add("bg-red-600");
+  showSuggestion("📸 Modo foto");
+};
 
-  document.getElementById("videoMode")
-  .classList.remove("bg-red-600");
-
-  showSuggestion("📸 Modo foto ativado");
-
-});
-
-document.getElementById("videoMode")
-.addEventListener("click", () => {
+document
+.getElementById("videoMode")
+.onclick = () => {
 
   currentMode = "video";
 
-  document.getElementById("videoMode")
-  .classList.add("bg-red-600");
+  showSuggestion("🎥 Modo vídeo");
+};
 
-  document.getElementById("photoMode")
-  .classList.remove("bg-red-600");
-
-  showSuggestion("🎥 Modo vídeo ativado");
-
-});
-
-function showSuggestion(text) {
-
-  let suggestion =
-  document.getElementById("aiSuggestion");
-
-  if (!suggestion) {
-
-    suggestion = document.createElement("div");
-
-    suggestion.id = "aiSuggestion";
-
-    suggestion.className =
-    "fixed top-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-5 py-3 rounded-2xl z-50 border border-cyan-400";
-
-    document.body.appendChild(suggestion);
-  }
-
-  suggestion.innerText = text;
-
-  setTimeout(() => {
-
-    suggestion.innerText =
-    "💡 IA: ajuste o enquadramento para efeito cinematográfico";
-
-  }, 2500);
-}
-
-showSuggestion("🎬 Cinematic AI iniciado");
-
-captureButton.addEventListener("click", () => {
+document
+.getElementById("capture")
+.onclick = () => {
 
   if (currentMode === "photo") {
 
@@ -144,16 +157,14 @@ captureButton.addEventListener("click", () => {
 
     ctx.drawImage(video, 0, 0);
 
-    const image =
-    canvas.toDataURL("image/png");
-
     const link =
     document.createElement("a");
 
-    link.href = image;
-
     link.download =
     "cinematic-photo.png";
+
+    link.href =
+    canvas.toDataURL();
 
     link.click();
 
@@ -161,8 +172,10 @@ captureButton.addEventListener("click", () => {
 
   } else {
 
-    if (!mediaRecorder ||
-    mediaRecorder.state === "inactive") {
+    if (
+      !mediaRecorder ||
+      mediaRecorder.state === "inactive"
+    ) {
 
       recordedChunks = [];
 
@@ -202,24 +215,23 @@ captureButton.addEventListener("click", () => {
 
       mediaRecorder.start();
 
-      showSuggestion("🔴 Gravando vídeo");
+      showSuggestion("🔴 Gravando");
 
     } else {
 
       mediaRecorder.stop();
-
     }
   }
-});
+};
 
 if ("serviceWorker" in navigator) {
 
-  window.addEventListener("load", () => {
-
-    navigator.serviceWorker
-    .register("./sw.js");
-
-  });
+  navigator.serviceWorker
+  .register("./sw.js");
 }
 
 </script>
+
+</body>
+</html>
+```

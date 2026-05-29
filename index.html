@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShadowShot AI PRO</title>
+
+<link rel="manifest" href="manifest.json">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+<style>
+body{
+margin:0;
+overflow:hidden;
+background:black;
+font-family:Arial,sans-serif;
+}
+video,canvas{
+position:fixed;
+inset:0;
+width:100%;
+height:100%;
+object-fit:cover;
+}
+.topbar{
+position:fixed;
+top:15px;
+left:50%;
+transform:translateX(-50%);
+background:rgba(0,0,0,.7);
+padding:10px 16px;
+border-radius:20px;
+color:white;
+z-index:999;
+border:1px solid cyan;
+}
+.controls{
+position:fixed;
+bottom:25px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:12px;
+z-index:999;
+}
+button{
+border:none;
+border-radius:50px;
+padding:12px 18px;
+background:#111;
+color:white;
+}
+.capture{
+width:80px;
+height:80px;
+border-radius:50%;
+background:white;
+border:8px solid #ccc;
+}
+</style>
+</head>
+
+<body>
+
+<video id="camera" autoplay playsinline muted></video>
+<canvas id="overlay"></canvas>
+
+<div class="topbar" id="status">
+🎬 IA analisando ambiente...
+</div>
+
+<div class="controls">
+<button id="switch">🔄</button>
+<button class="capture" id="capture"></button>
+</div>
+
+<script>
+
+let facingMode = "environment";
+let stream = null;
+let model = null;
+let selected = null;
+
+const video = document.getElementById("camera");
+const canvas = document.getElementById("overlay");
+const ctx = canvas.getContext("2d");
+
+async function startCamera(){
+
+if(stream){
+stream.getTracks().forEach(track=>track.stop());
+}
+
+stream = await navigator.mediaDevices.getUserMedia({
+video:{facingMode},
+audio:false
+});
+
+video.srcObject = stream;
+
+}
+
+async function loadAI(){
+
+model = await cocoSsd.load();
+
+detect();
+
+}
+
+canvas.addEventListener("click",(e)=>{
+
+if(!window.lastPredictions)return;
+
+const x = e.clientX;
+const y = e.clientY;
+
+window.lastPredictions.forEach(item=>{
+
+const [bx,by,bw,bh] = item.bbox;
+
+if(
+x > bx &&
+x < bx+bw &&
+y > by &&
+y < by+bh
+){
+selected = item;
+document.getElementById("status").innerText =
+"🎯 Foco: " + item.class;
+}
+
+});
+
+});
+
+async function detect(){
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const predictions =
+await model.detect(video);
+
+window.lastPredictions = predictions;
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+predictions.forEach(item=>{
+
+const [x,y,w,h] = item.bbox;
+
+ctx.lineWidth = 4;
+
+if(selected === item){
+
+ctx.strokeStyle = "lime";
+ctx.shadowColor = "lime";
+
+}else{
+
+ctx.strokeStyle = "cyan";
+ctx.shadowColor = "cyan";
+
+}
+
+ctx.shadowBlur = 20;
+
+ctx.strokeRect(x,y,w,h);
+
+ctx.font = "18px Arial";
+ctx.fillStyle = "white";
+
+ctx.fillText(
+item.class,
+x,
+y > 20 ? y - 10 : 20
+);
+
+});
+
+requestAnimationFrame(detect);
+
+}
+
+document.getElementById("switch").onclick =
+async ()=>{
+
+facingMode =
+facingMode === "environment"
+? "user"
+: "environment";
+
+await startCamera();
+
+};
+
+document.getElementById("capture").onclick =
+()=>{
+
+const photo =
+document.createElement("canvas");
+
+photo.width = video.videoWidth;
+photo.height = video.videoHeight;
+
+const pctx = photo.getContext("2d");
+
+pctx.drawImage(video,0,0);
+
+const link =
+document.createElement("a");
+
+link.download = "shadowshot-photo.png";
+
+link.href = photo.toDataURL();
+
+link.click();
+
+document.getElementById("status").innerText =
+"📸 Foto salva";
+
+};
+
+startCamera().then(loadAI);
+
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("./sw.js");
+}
+
+</script>
+
+</body>
+</html>

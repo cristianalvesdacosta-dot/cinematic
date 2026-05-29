@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ShadowShot AI</title>
+
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Câmera cinematográfica com IA" />
+
+  <link rel="manifest" href="manifest.json" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
+
+  <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <div class="bg-zinc-900 rounded-3xl p-4 shadow-2xl border border-zinc-800 relative overflow-hidden">
+
+      <div class="absolute top-4 left-4 z-50 bg-red-600 text-xs px-3 py-1 rounded-full animate-pulse">
+        REC
+      </div>
+
+      <div class="absolute top-4 right-4 z-50 bg-black/70 px-3 py-1 rounded-full text-sm">
+        AI CINEMATIC MODE
+      </div>
+
+      <div class="aspect-[9/16] rounded-2xl bg-black relative overflow-hidden border border-zinc-700">
+
+        <video
+          id="camera"
+          autoplay
+          playsinline
+          muted
+          class="absolute inset-0 w-full h-full object-cover"
+        ></video>
+
+        <canvas
+          id="overlay"
+          class="absolute inset-0 w-full h-full"
+        ></canvas>
+
+        <div class="absolute inset-0 border-4 border-red-500/30 rounded-2xl pointer-events-none"></div>
+
+        <div class="absolute bottom-24 left-1/2 -translate-x-1/2 w-52 h-72 border-4 border-cyan-400 rounded-[40px] opacity-70 animate-pulse"></div>
+
+        <div class="absolute bottom-10 left-0 right-0 text-center z-50">
+          <p class="text-lg font-bold">POSE DETECTADA</p>
+          <p class="text-sm text-zinc-300">
+            Ajuste o enquadramento para modo cinematográfico
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center justify-between gap-3">
+
+        <div class="flex gap-3">
+          <button class="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-xl transition">
+            Cinematic
+          </button>
+
+          <button class="bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-xl transition">
+            Moto Mode
+          </button>
+        </div>
+
+        <button
+          id="capture"
+          class="w-20 h-20 rounded-full bg-white border-8 border-zinc-300 hover:scale-105 transition"
+        ></button>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+
+      <div class="bg-zinc-900 rounded-3xl p-6 border border-zinc-800 shadow-xl">
+        <h1 class="text-3xl font-bold mb-3">ShadowShot AI</h1>
+
+        <p class="text-zinc-300 leading-relaxed">
+          Sistema inteligente de câmera cinematográfica com IA.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+
+        <div class="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+          <h2 class="font-semibold mb-2">Reconhecimento</h2>
+
+          <ul class="text-sm text-zinc-400 space-y-1">
+            <li>• Corpo humano</li>
+            <li>• Moto</li>
+            <li>• Capacete</li>
+            <li>• Cenário</li>
+          </ul>
+        </div>
+
+        <div class="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+          <h2 class="font-semibold mb-2">IA Visual</h2>
+
+          <ul class="text-sm text-zinc-400 space-y-1">
+            <li>• Pose automática</li>
+            <li>• Silhueta dinâmica</li>
+            <li>• Ângulo perfeito</li>
+            <li>• Cinematic AI</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-gradient-to-r from-red-600 to-orange-500 rounded-3xl p-6 text-black shadow-2xl">
+
+        <h2 class="text-2xl font-bold mb-2">
+          Recursos Profissionais
+        </h2>
+
+        <ul class="space-y-2 font-medium">
+          <li>✔ Disparo automático inteligente</li>
+          <li>✔ Modo cinematográfico</li>
+          <li>✔ Overlay em tempo real</li>
+          <li>✔ Sugestão automática de composição</li>
+          <li>✔ Reconhecimento ambiente</li>
+          <li>✔ Instalável como APP</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'environment'
+      },
+      audio: false
+    });
+
+    const video = document.getElementById('camera');
+    video.srcObject = stream;
+
+  } catch (error) {
+    alert('Erro ao acessar câmera: ' + error.message);
+  }
+}
+
+startCamera();
+
+const captureButton = document.getElementById('capture');
+
+captureButton.addEventListener('click', () => {
+  alert('Foto capturada em modo cinematic!');
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js');
+  });
+}
+</script>
+
+</body>
+</html>

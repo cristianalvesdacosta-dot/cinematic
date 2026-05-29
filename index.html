@@ -1,31 +1,41 @@
+```html
 <script>
+
 let currentFacingMode = "environment";
 let mediaStream = null;
 let currentMode = "photo";
+let mediaRecorder = null;
+let recordedChunks = [];
 
 const video = document.getElementById("camera");
 const captureButton = document.getElementById("capture");
 
 const controls = document.createElement("div");
-controls.className = "fixed bottom-5 left-1/2 -translate-x-1/2 flex gap-3 z-50";
+
+controls.className =
+"fixed bottom-5 left-1/2 -translate-x-1/2 flex gap-3 z-50";
 
 controls.innerHTML = `
-<button id="switchCamera" class="bg-black/70 text-white px-4 py-2 rounded-xl border border-white/20">
-🔄 Câmera
+<button id="switchCamera"
+class="bg-black/70 text-white px-4 py-2 rounded-xl border border-white/20">
+🔄
 </button>
 
-<button id="photoMode" class="bg-red-600 text-white px-4 py-2 rounded-xl">
-📸 Foto
+<button id="photoMode"
+class="bg-red-600 text-white px-4 py-2 rounded-xl">
+📸
 </button>
 
-<button id="videoMode" class="bg-zinc-800 text-white px-4 py-2 rounded-xl">
-🎥 Vídeo
+<button id="videoMode"
+class="bg-zinc-800 text-white px-4 py-2 rounded-xl">
+🎥
 </button>
 `;
 
 document.body.appendChild(controls);
 
 async function startCamera() {
+
   try {
 
     if (mediaStream) {
@@ -42,51 +52,69 @@ async function startCamera() {
     video.srcObject = mediaStream;
 
   } catch (error) {
-    alert("Erro câmera: " + error.message);
+
+    alert("Erro ao acessar câmera: " + error.message);
+
   }
 }
 
 startCamera();
 
-document.getElementById("switchCamera").onclick = async () => {
+document.getElementById("switchCamera")
+.addEventListener("click", async () => {
 
   currentFacingMode =
-    currentFacingMode === "environment"
-      ? "user"
-      : "environment";
+  currentFacingMode === "environment"
+  ? "user"
+  : "environment";
 
   await startCamera();
-};
 
-document.getElementById("photoMode").onclick = () => {
+});
+
+document.getElementById("photoMode")
+.addEventListener("click", () => {
+
   currentMode = "photo";
 
-  document.getElementById("photoMode").classList.add("bg-red-600");
-  document.getElementById("videoMode").classList.remove("bg-red-600");
+  document.getElementById("photoMode")
+  .classList.add("bg-red-600");
 
-  showSuggestion("Modo foto ativado");
-};
+  document.getElementById("videoMode")
+  .classList.remove("bg-red-600");
 
-document.getElementById("videoMode").onclick = () => {
+  showSuggestion("📸 Modo foto ativado");
+
+});
+
+document.getElementById("videoMode")
+.addEventListener("click", () => {
+
   currentMode = "video";
 
-  document.getElementById("videoMode").classList.add("bg-red-600");
-  document.getElementById("photoMode").classList.remove("bg-red-600");
+  document.getElementById("videoMode")
+  .classList.add("bg-red-600");
 
-  showSuggestion("Modo vídeo ativado");
-};
+  document.getElementById("photoMode")
+  .classList.remove("bg-red-600");
+
+  showSuggestion("🎥 Modo vídeo ativado");
+
+});
 
 function showSuggestion(text) {
 
-  let suggestion = document.getElementById("aiSuggestion");
+  let suggestion =
+  document.getElementById("aiSuggestion");
 
   if (!suggestion) {
+
     suggestion = document.createElement("div");
 
     suggestion.id = "aiSuggestion";
 
     suggestion.className =
-      "fixed top-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-5 py-3 rounded-2xl z-50 border border-cyan-400";
+    "fixed top-5 left-1/2 -translate-x-1/2 bg-black/70 text-white px-5 py-3 rounded-2xl z-50 border border-cyan-400";
 
     document.body.appendChild(suggestion);
   }
@@ -94,18 +122,21 @@ function showSuggestion(text) {
   suggestion.innerText = text;
 
   setTimeout(() => {
+
     suggestion.innerText =
-      "💡 IA: incline levemente a câmera para efeito cinematográfico";
+    "💡 IA: ajuste o enquadramento para efeito cinematográfico";
+
   }, 2500);
 }
 
 showSuggestion("🎬 Cinematic AI iniciado");
 
-captureButton.onclick = () => {
+captureButton.addEventListener("click", () => {
 
   if (currentMode === "photo") {
 
-    const canvas = document.createElement("canvas");
+    const canvas =
+    document.createElement("canvas");
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -114,25 +145,83 @@ captureButton.onclick = () => {
 
     ctx.drawImage(video, 0, 0);
 
-    const link = document.createElement("a");
+    const image =
+    canvas.toDataURL("image/png");
 
-    link.download = `cinematic-${Date.now()}.png`;
+    const link =
+    document.createElement("a");
 
-    link.href = canvas.toDataURL("image/png");
+    link.href = image;
+
+    link.download =
+    "cinematic-photo.png";
 
     link.click();
 
-    showSuggestion("📸 Foto salva com sucesso");
+    showSuggestion("📸 Foto salva");
 
   } else {
 
-    showSuggestion("🎥 Gravação de vídeo em desenvolvimento");
+    if (!mediaRecorder ||
+    mediaRecorder.state === "inactive") {
+
+      recordedChunks = [];
+
+      mediaRecorder =
+      new MediaRecorder(mediaStream);
+
+      mediaRecorder.ondataavailable =
+      event => {
+
+        if (event.data.size > 0) {
+          recordedChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+
+        const blob =
+        new Blob(recordedChunks, {
+          type: "video/webm"
+        });
+
+        const url =
+        URL.createObjectURL(blob);
+
+        const link =
+        document.createElement("a");
+
+        link.href = url;
+
+        link.download =
+        "cinematic-video.webm";
+
+        link.click();
+
+        showSuggestion("🎥 Vídeo salvo");
+      };
+
+      mediaRecorder.start();
+
+      showSuggestion("🔴 Gravando vídeo");
+
+    } else {
+
+      mediaRecorder.stop();
+
+    }
   }
-};
+});
 
 if ("serviceWorker" in navigator) {
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js");
+
+    navigator.serviceWorker
+    .register("./sw.js");
+
   });
 }
+
 </script>
+```
